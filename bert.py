@@ -42,12 +42,13 @@ class BertSelfAttention(nn.Module):
     # S[*, i, j, k] represents the (unnormalized)attention score between the j-th and k-th token, given by i-th attention head
     # before normalizing the scores, use the attention mask to mask out the padding token scores
     # Note again: in the attention_mask non-padding tokens with 0 and padding tokens with a large negative number 
+    # attention_mask = torch.where(attention_mask == 0, 1.0, -1e10)
 
     # |PRIYAM|
     # Read the `forward` function first.
     # It already transforms everything.
     scores = torch.matmul(query, torch.transpose(key, 2, 3)) / math.sqrt(key.shape[-1])
-    scores *= attention_mask
+    scores = scores.masked_fill(attention_mask < 0, -10000)
     
     # normalize the scores
     normed = torch.softmax(scores, -1)
@@ -102,7 +103,9 @@ class BertLayer(nn.Module):
     ln_layer: layer norm that takes input+sublayer(output)
     """
     # todo
-    raise NotImplementedError
+    # raise NotImplementedError
+    return ln_layer(input + dropout(dense_layer(output)))
+
 
   def forward(self, hidden_states, attention_mask):
     """
@@ -116,16 +119,19 @@ class BertLayer(nn.Module):
     """
     # todo
     # multi-head attention w/ self.self_attention
-    self.self_attention(hidden_states, attention_mask)
+    atten = self.self_attention(hidden_states, attention_mask)
 
     # add-norm layer
+    norm_atten = self.add_norm(hidden_states, atten, self.attention_dense, self.attention_dropout, self.attention_layer_norm)
 
     # feed forward
+    interim = self.interm_af(self.interm_dense(norm_atten))
 
     # another add-norm layer
+    ffn = self.add_norm(norm_atten, interim, self.out_dense, self.out_dropout, self.out_layer_norm)
 
-
-    raise NotImplementedError
+    # raise NotImplementedError
+    return ffn
 
 
 class BertModel(BertPreTrainedModel):
