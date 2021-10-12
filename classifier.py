@@ -13,7 +13,7 @@ from optimizer import AdamW
 from tqdm import tqdm
 
 
-TQDM_DISABLE=True
+TQDM_DISABLE=False
 # fix the random seed
 def seed_everything(seed=11711):
     random.seed(seed)
@@ -38,12 +38,18 @@ class BertSentClassifier(torch.nn.Module):
                 param.requires_grad = True
 
         # todo
-        raise NotImplementedError
+        # raise NotImplementedError
+        self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
+        self.project = torch.nn.Linear(config.hidden_size, config.num_labels)
+        self.softmax = torch.nn.LogSoftmax(dim=-1)
 
     def forward(self, input_ids, attention_mask):
         # todo
         # the final bert contextualize embedding is the hidden state of [CLS] token (the first token)
-        raise NotImplementedError
+        # raise NotImplementedError
+        output = self.bert(input_ids, attention_mask)
+        pooled = output['pooler_output']
+        return self.softmax(self.project(self.dropout(pooled)))
 
 # create a custom Dataset Class to be used for the dataloader
 class BertDataset(Dataset):

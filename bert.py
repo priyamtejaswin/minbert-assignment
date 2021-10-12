@@ -58,7 +58,7 @@ class BertSelfAttention(nn.Module):
 
     # next, we need to concat multi-heads and recover the original shape [bs, seq_len, num_attention_heads * attention_head_size = hidden_size]
     # raise NotImplementedError
-    print(per_head.shape)
+    # print(per_head.shape)
     # atten = torch.cat(per_head, 1)
     atten = torch.cat([per_head[:, i, :, :] for i in range(per_head.shape[1])], -1)
     return atten
